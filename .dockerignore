@@ -1,0 +1,11 @@
+.git
+.venv
+.env
+.idea
+.claude
+__pycache__
+*.pyc
+logs
+staticfiles
+export
+docker/initdb

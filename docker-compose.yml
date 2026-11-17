@@ -1,0 +1,48 @@
+# One command: `docker compose up` -> http://localhost:8000/admin/ (admin / admin)
+#
+# On the very first start (empty volume) Postgres loads the snapshot of the collected
+# data from docker/initdb/, so the admin opens with all jobs and companies right away.
+# Local development without the web container: `docker compose up -d db`.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-linkedin_jobs}
+      POSTGRES_USER: ${POSTGRES_USER:-linkedin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linkedin}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # over TCP on purpose: while the snapshot is being loaded, Postgres runs a temporary
+      # socket-only server, and a socket check would let `web` start migrating too early
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-linkedin} -d ${POSTGRES_DB:-linkedin_jobs}"]
+      interval: 5s
+      retries: 60
+      start_period: 120s
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_SECRET_KEY: "local-demo-only-not-a-secret"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-linkedin_jobs}
+      POSTGRES_USER: ${POSTGRES_USER:-linkedin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linkedin}
+      # demo admin for the local run; change it before exposing the app anywhere
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_PASSWORD: admin
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+
+volumes:
+  pgdata:
