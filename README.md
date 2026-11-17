@@ -16,8 +16,8 @@
 Потрібен лише [Docker](https://www.docker.com/products/docker-desktop/).
 
 ```bash
-git clone <посилання на цей репозиторій>
-cd <назва папки>
+git clone https://github.com/sind14/jobs-parser.git
+cd jobs-parser
 docker compose up
 ```
 
