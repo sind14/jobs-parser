@@ -227,7 +227,9 @@ class SearchRunner:
             sl.new_jobs += new
             sl.next_start += PAGE_SIZE
             sl.save(update_fields=["results_seen", "new_jobs", "next_start", "updated_at"])
-            if q.max_jobs and self._jobs_count() >= q.max_jobs:
+            # live counters in the admin: a slice can take minutes (up to ~40 pages)
+            self._update_query_stats()
+            if q.max_jobs and q.jobs_found >= q.max_jobs:
                 sl.status = SearchSlice.Status.PENDING  # resumable later
                 sl.save(update_fields=["status", "updated_at"])
                 return
